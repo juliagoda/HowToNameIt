@@ -1,2 +1,3 @@
 # HowToNameIt
-a set of diagrams showing the names of individual elements in computer science
+
+There are many books, websites, blogs and articles that describe how systems, networks and programming languages work, but rarely do you find materials that can easily help you find the names of individual elements. This makes it difficult to understand people who use professional terminology. Additionally, it takes more time to understand the content, because you are not sure which element it is about. You wonder for a long time when at the very end it turns out that it's an element you probably look at every day, but you can't name it properly. Asking questions to someone via the Internet usually ends with another series of descriptions, because nobody wants to create schematics for one person to make it easier to understand. In order to get to know the professional names, this repository was created. 
