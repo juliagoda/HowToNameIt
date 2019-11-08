@@ -444,6 +444,118 @@ ghci> a .++ b
 -- (:-:) 3 ((:-:) 4 ((:-:) 5 ((:-:) 6 ((:-:) 7 Empty)))) 
 
 
+-- różnica między foldl a foldl' oraz między foldr a foldr'
+
+-- foldl, foldl', foldr i foldr' wymagają podania wartości początkowej (w miejsce drugiego argument funkcji)
+-- foldl' i foldr' to funkcje tak zwane restrykcyjne, co znaczy, że skupiają się na niezbędnych elementach, zamiast od razu na całości
+-- w tym wypadku te niezbędne elementy to dwa sąsiednie elementy na liście (np. dwie dodawane liczby z których powstaje jedna, taką redukcja elementów cechuje się właśnie "folding")
+-- w sytuacji "leniwej" czyli dla foldl, foldr, foldl1, foldr1 wszystkie kroki obliczania są rozpisywane, zanim zostaną redukowane, co zajmuje dużo więcej czasu, ale działają przez to dla list nieskończonych (taką listą nieskończoną jest np. [1..])
+-- foldr1 i foldl1 są takie same jak foldl i foldr, ale podanie wartości początkowej nie jest wymagane (wynik w foldr1 i w foldr może się różnić)
+
+
+Prelude Data.Foldable> foldr (-) 0 [1,2,3]
+2
+
+-- 1 krok: 1 -
+-- 2 krok: 1 - (2 -
+-- 3 krok: 1 - (2 - (3 - 0))
+-- 4 krok: 1 - (2 - (3))
+-- 5 krok: 1 - (- 1)
+-- 6 krok: 2
+
+Prelude Data.Foldable> foldl (-) 0 [1,2,3]
+-6
+
+-- 1 krok: (0 - 1) 
+-- 2 krok: (0 - 1) - 2
+-- 3 krok: ((0 - 1) - 2) - 3
+-- 4 krok: ((-1) - 2) - 3
+-- 5 krok: (-3) - 3
+-- 6 krok: -6
+
+-- z kolei restrykcyjne funkcje fold działają tak:
+
+Prelude Data.Foldable> foldl' (-) 0 [1,2,3]
+-6
+
+-- 1 krok: (0 - 1) 
+-- 2 krok: (-1) - 2
+-- 3 krok: (-3) - 3
+-- 4 krok: -6
+
+Prelude Data.Foldable> foldr1 (-) [1,2,3]
+2
+
+-- 1 krok: (1 -
+-- 2 krok: (1 - (2 -
+-- 3 krok: (1 - (2 - 3))
+-- 4 krok: (1 - (- 1))
+-- 5 krok: 2
+
+Prelude Data.Foldable> foldl1 (-) [1,2,3]
+-4
+
+-- 1 krok: (1 - 
+-- 2 krok: (1 - 2)
+-- 3 krok: ((1 - 2) - 3)
+-- 4 krok: (- 1) - 3
+-- 5 krok: -4
+
+-- powyższy wynik różni się od foldl (-) 0 [1,2,3]
+
+
+-- inny przykład związany z różnicą między restrict a lazy
+
+plus :: Int -> Int -> Int
+plus _ 0 = 0 -- gdy bedzie po drodze cos innego niz liczba, zwroc 0
+plus a b = a * b
+
+list = [1,2,3,undefined,4,5]
+
+-- wersja rozpisywana
+-- dalsze spojrzenie na wszystkie kroki ewaluacji pozwala uwzglednic undefined w gornej granicy funkcji plus bez problemu (czyli w plus _ 0 = 0, gdzie undefined dopasowuje sie w _ )
+Prelude GHC.Err Data.Foldable> foldl plus 0 list
+0
+
+-- wersja "po drodze"
+-- nie wie co robic, widzi tylko aktualny element i kolejny, ktorym jest w koncu undefined, liczba i undefined nie moga zostac polaczone
+Prelude GHC.Err Data.Foldable> foldl' plus 0 list
+*** Exception: Prelude.undefined
+
+
+plus2 :: Int -> Int -> Int
+plus2 _ b = b -- gdy bedzie po drodze cos innego niz liczba, zwroc ostatnia liczbe z listy
+plus2 a b = a * b
+
+list = [1,2,3,undefined,4,5]
+
+Prelude GHC.Err Data.Foldable> foldl plus2 0 list
+5
+
+Prelude GHC.Err Data.Foldable> foldl' plus2 0 list
+*** Exception: Prelude.undefined
+
+
+-- Jeśli nie ma potrzeby pracowania przy listach nieskończonych leniwych i chce się po prostu uzyskać zwyklą wartość, 
+-- szczególnie gdy mowa o dużej ilości elementów, to warto użyć foldl' zamiast foldr'
+-- można zawsze samemu wywołać np. foldr' (+) 0 [1..1000000]
+-- oraz foldl' (+) 0 [1..1000000] i zobaczyć, który wywołuje się szybciej
+
+"foldl' (+) 0 [1..1000000]" szybciej od "foldr (+) 0 [1..1000000]" oraz "foldr' (+) 0 [1..1000000]" szybciej od "foldl (+) 0 [1..1000000]"
+
+"foldl1 (+) [1..1000000]" oraz "foldr1 (+) [1..1000000]" wykonują się w podobnym czasie, choć i tak wolniej niż foldl' w tym przypadku
+
+
+-- Jeśli już mowa o leniwych funkcjach, to można to zaobserwować oczywiście w innych funkcjach w języku
+-- na przykładach choćby w słynnych mapperach i filtrach
+
+Prelude Data.Foldable> map (+3) [1,2,3,undefined,4,5]
+[4,5,6,*** Exception: Prelude.undefined
+
+-- powyżej widać część wyników, zanim mapper napotkał "undefined"
+-- a że nie posiadał żadnych informacji na temat tego, co znajduje się na liście za "undefined", zwrócił od razu wyjątek
+
+
 data Tree a = EmptyTree | Node a (Tree a) (Tree a) deriving (Show, Read, Eq)  
 
 
