@@ -553,7 +553,9 @@ Prelude Data.Foldable> map (+3) [1,2,3,undefined,4,5]
 [4,5,6,*** Exception: Prelude.undefined
 
 -- powyżej widać część wyników, zanim mapper napotkał "undefined"
--- a że nie posiadał żadnych informacji na temat tego, co znajduje się na liście za "undefined", zwrócił od razu wyjątek
+-- a że nie posiadał żadnych informacji na temat tego, co znajduje się na liście za "undefined", zwrócił od razu wyjątek (do uzyskania takiego rezultatu jak z funkcjami fold, potrzebna by byla kolejna funkcja pomocnicza jak np. plus, czy plus2)
+-- mimo to "leniwość" i tak widać po wypisywanych elementach
+
 
 
 data Tree a = EmptyTree | Node a (Tree a) (Tree a) deriving (Show, Read, Eq)  
